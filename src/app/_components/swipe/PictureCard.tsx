@@ -1,7 +1,7 @@
 "use client";
 
 import {LuBean} from "react-icons/lu";
-import {type BeanDetails} from "~/server/api/routers/beans";
+import {type BeanDetails} from "~/types/Types";
 
 export function PictureCard(props: { beanDetails: BeanDetails, onMatch: () => void }) {
   return (

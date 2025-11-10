@@ -1,6 +1,7 @@
 import {z} from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { type BeanOrder, OrderState } from "~/types/Types"
+import { type BeanStock } from "@prisma/client";
+import { type BeanDetails } from "~/types/Types";
 
 export interface BeanIngredients {
   line1: string,
@@ -15,32 +16,6 @@ export interface BeanSpecifics {
   additionalInfo: string,
 }
 
-export interface BeanDetails {
-  id: string,
-  name: string,
-  description: string,
-  image1Url: string,
-  ingredients: BeanIngredients,
-  specifics: BeanSpecifics,
-}
-
-const beanOrders: BeanOrder[] = [
-  {
-    orderId: "abc",
-    beanName: "Borlotti Beans",
-    name: "John",
-    orderState: OrderState.Pending,
-    orderPlacedDateTime: new Date(),
-  },
-  {
-    orderId: "def",
-    beanName: "Homemade Cider",
-    name: "Jane",
-    orderState: OrderState.Accepted,
-    orderPlacedDateTime: new Date(),
-  }
-];
-
 const beanDetails: BeanDetails[] = [
   {
     id: "3d1e1622-e9f5-488e-bb53-938c93d1c465",
@@ -48,7 +23,8 @@ const beanDetails: BeanDetails[] = [
     description: "In a tomato sauce",
     image1Url: "/img/borlotti_beans_1.jpg",
     ingredients: {line1: "Glue", line2: "Glue", line3: "Glue"},
-    specifics: {temperature: "Hot", chefName: "Mr Tom Hibbs", pairingSuggestion: "Homemade Cider", additionalInfo: "Do not consume if you have a pacemaker"}
+    specifics: {temperature: "Hot", chefName: "Mr Tom Hibbs", pairingSuggestion: "Homemade Cider", additionalInfo: "Do not consume if you have a pacemaker"},
+    stock: 0,
   },
   {
     id: "3d1e1622-e9f5-488e-bb53-938c93d1c466",
@@ -56,7 +32,8 @@ const beanDetails: BeanDetails[] = [
     description: "Not fit for human consumption",
     image1Url: "/img/mead_1.jpg",
     ingredients: {line1: "Honey", line2: "Petrol", line3: "Lighter Fluid"},
-    specifics: {temperature: "Room Temp", chefName: "The monk we keep in the walls", pairingSuggestion: "Fomepizole 5mg", additionalInfo: "Do not consume"}
+    specifics: {temperature: "Room Temp", chefName: "The monk we keep in the walls", pairingSuggestion: "Fomepizole 5mg", additionalInfo: "Do not consume"},
+    stock: 0,
   }
 ]
 
@@ -72,25 +49,38 @@ export const beanRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const beanId = beanDetails
+          .filter((detail) => detail.name === input.beanName)
+          .map((detail) => detail.id)[0] ?? "Unknown Bean Id";
 
-      // const order =
+      const stock = await ctx.db.beanStock.findUnique({
+        where: {
+          id: beanId
+        }
+      }) ?? 0;
+
+      if (stock.stock <= 0) {
+        return;
+      }
+
+      await ctx.db.beanStock.update({
+        where: {
+          id: beanId,
+        },
+        data: {
+          stock: {
+            decrement: 1
+          },
+        },
+      });
+
       await ctx.db.order.create({
         data: {
-          beanId: beanDetails
-            .filter((detail) => detail.name === input.beanName)
-            .map((detail) => detail.id)[0] ?? 'Unknown Bean Id',
+          beanId: beanId,
           name: input.user,
         },
       });
       return;
-      // beanOrders.push({
-      //   orderId: crypto.randomUUID(),
-      //   beanName: input.beanName,
-      //   name: input.user,
-      //   orderState: OrderState.Pending,
-      //   orderPlacedDateTime: new Date(),
-      // })
-      // console.log("Ordering beans " + input.beanName + " for user " + input.user);
     }),
 
   acceptOrder: publicProcedure
@@ -99,13 +89,15 @@ export const beanRouter = createTRPCRouter({
         orderId: z.string(),
       }),
     )
-    .mutation(async (opts) => {
-      const { input } = opts;
-
-      const order = beanOrders.find((order) => order.orderId === input.orderId);
-      if (order) {
-        order.orderState = OrderState.Accepted;
-      }
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.order.update({
+        where: {
+          id: input.orderId,
+        },
+        data: {
+          orderState: "ACCEPTED",
+        },
+      });
     }),
 
   completeOrder: publicProcedure
@@ -114,13 +106,15 @@ export const beanRouter = createTRPCRouter({
         orderId: z.string(),
       }),
     )
-    .mutation(async (opts) => {
-      const { input } = opts;
-
-      const order = beanOrders.find((order) => order.orderId === input.orderId);
-      if (order) {
-        order.orderState = OrderState.Completed;
-      }
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.order.update({
+        where: {
+          id: input.orderId,
+        },
+        data: {
+          orderState: "COMPLETED",
+        },
+      });
     }),
 
   rejectOrder: publicProcedure
@@ -129,18 +123,27 @@ export const beanRouter = createTRPCRouter({
         orderId: z.string(),
       }),
     )
-    .mutation(async (opts) => {
-      const { input } = opts;
-
-      const order = beanOrders.find((order) => order.orderId === input.orderId);
-      if (order) {
-        order.orderState = OrderState.Cancelled;
-      }
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.order.update({
+        where: {
+          id: input.orderId,
+        },
+        data: {
+          orderState: "CANCELLED",
+        },
+      });
     }),
 
-  getBeanOrders: publicProcedure.query(async ({ctx}) => {
-    return await ctx.db.order.findMany() ?? [];
-    // return beanOrders;
+  getBeanOrders: publicProcedure.query(async ({ ctx }) => {
+    return ((await ctx.db.order.findMany()) ?? []).map((order) => ({
+      orderId: order.id,
+      beanName: beanDetails
+        .filter((detail) => detail.id === order.beanId)
+        .map((detail) => detail.name)[0] ?? "Unknown Bean Name",
+      name: order.name,
+      orderState: order.orderState,
+      orderPlacedDateTime: order.orderPlacedDateTime,
+    }));
   }),
 
   getBeanOrdersByName: publicProcedure
@@ -149,14 +152,57 @@ export const beanRouter = createTRPCRouter({
         name: z.string(),
       }),
     )
-    .query(async (opts) => {
-      const { input } = opts;
-
-      return beanOrders.filter((order) => order.name === input.name);
+    .query(async ({ctx, input}) => {
+      return (await ctx.db.order.findMany({
+        where: {
+          name: input.name
+        }
+      }) ?? []).map((order) => ({
+        orderId: order.id,
+        beanName: beanDetails
+            .filter((detail) => detail.id === order.beanId)
+            .map((detail) => detail.name)[0] ?? "Unknown Bean Name",
+        name: order.name,
+        orderState: order.orderState,
+        orderPlacedDateTime: order.orderPlacedDateTime,
+      }));
     }),
 
-  getBeanDetails: publicProcedure.query(() => {
-    return beanDetails;
+  getBeanDetails: publicProcedure.query(async ({ctx}) => {
+    const beanIds = beanDetails.map(detail => detail.id);
+
+    const beanStock: BeanStock[] = await ctx.db.beanStock.findMany({
+      where: {
+        id: {
+          in: beanIds
+        }
+      }
+    })
+
+    const beanStockMap = new Map(beanStock.map(stock => [stock.id, stock.stock]));
+
+    const enrichedDetails = beanDetails.map(details => ({
+      ...details,
+      stock: beanStockMap.get(details.id) ?? 100,
+    }));
+
+    return enrichedDetails;
+  }),
+
+  insertStock: publicProcedure.mutation(async ({ ctx }) => {
+
+    const dataToUpsert = [
+      { id: '3d1e1622-e9f5-488e-bb53-938c93d1c465', stock: 10 },
+      { id: '3d1e1622-e9f5-488e-bb53-938c93d1c466', stock: 10 },
+    ];
+    for (const data of dataToUpsert) {
+      await ctx.db.beanStock.upsert({
+        where: { id: data.id },
+        update: { stock: data.stock },
+        create: data,
+      })
+    }
+
   }),
 });
 

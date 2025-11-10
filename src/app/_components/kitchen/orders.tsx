@@ -1,12 +1,13 @@
 'use client'
 
 import {api} from "~/trpc/react";
-import {useEffect, useRef, useState} from "react";
-import {type BeanOrder, OrderState} from "~/server/api/routers/beans";
+import React, {useEffect, useRef, useMemo} from "react";
+import {type BeanOrder} from "~/types/Types";
 import PendingOrder from "~/app/_components/kitchen/pendingOrder";
 import AcceptedOrder from "~/app/_components/kitchen/acceptedOrder";
 import CompletedOrder from "~/app/_components/kitchen/completedOrder";
 import {sortOrdersByDateAsc} from "~/app/util/OrdersUtil";
+import { OrderState } from "@prisma/client";
 
 interface SplitOrders {
   pending: BeanOrder[],
@@ -16,46 +17,44 @@ interface SplitOrders {
 
 export function Orders() {
   const isFirstRender = useRef<boolean>(true);
-  const [splitOrders, setSplitOrders] = useState<SplitOrders>({pending: [], accepted: [], completed: []});
+  const prevOrderCount = useRef<number>(0);
   const utils = api.useUtils();
   const {data: orders = []} = api.bean.getBeanOrders.useQuery();
 
   const musicPlayers = useRef<HTMLAudioElement | undefined>(
-      typeof Audio !== "undefined" ? new Audio("/audio/maccas.m4a") : undefined
+    typeof Audio !== "undefined" ? new Audio("/audio/maccas.m4a") : undefined
   );
 
-  const calcOrders = (): SplitOrders => {
+  const splitOrders = useMemo(() => {
     const tSplitOrders: SplitOrders = {pending: [], accepted: [], completed: []};
 
     for (const order of orders) {
       switch (order.orderState) {
-        case OrderState.Pending:
+        case OrderState.PENDING:
           tSplitOrders.pending.push(order);
           break;
-        case OrderState.Accepted:
+        case OrderState.ACCEPTED:
           tSplitOrders.accepted.push(order);
           break;
-        case OrderState.Completed:
-        case OrderState.Cancelled:
+        case OrderState.COMPLETED:
+        case OrderState.CANCELLED:
           tSplitOrders.completed.push(order);
           break;
       }
     }
 
-    if (!isFirstRender.current && (orders.length) > (splitOrders.pending.length + splitOrders.accepted.length + splitOrders.completed.length)) {
-      // New order present, play beep sound
+    // Check if there are new orders
+    if (!isFirstRender.current && orders.length > prevOrderCount.current) {
       void musicPlayers.current?.play();
     }
 
-    return tSplitOrders;
-  }
-
-  // TODO: FInd why this is broken
-  useEffect(() => {
-    setSplitOrders(calcOrders());
+    // Update refs
+    prevOrderCount.current = orders.length;
     if (isFirstRender.current) {
       isFirstRender.current = false;
     }
+
+    return tSplitOrders;
   }, [orders]);
 
   useEffect(() => {

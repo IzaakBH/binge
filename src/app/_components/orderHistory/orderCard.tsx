@@ -1,4 +1,5 @@
-import {type BeanOrder, OrderState} from "~/types/Types";
+import {type BeanOrder} from "~/types/Types";
+import { OrderState } from "@prisma/client";
 import {minsSinceDate} from "~/app/util/DateUtil";
 import React from "react";
 
@@ -8,18 +9,18 @@ const OrderCard = (props: { order: BeanOrder }) => {
   let orderStateString = "";
 
   switch (props.order.orderState) {
-    case OrderState.Pending:
+    case OrderState.PENDING:
       orderStateString = "Pending";
       break;
-    case OrderState.Accepted:
+    case OrderState.ACCEPTED:
       dropShadowStyle = "shadow-yellow-700";
       orderStateString = "Accepted";
       break;
-    case OrderState.Completed:
+    case OrderState.COMPLETED:
       dropShadowStyle = "shadow-green-700";
       orderStateString = "Completed";
       break;
-    case OrderState.Cancelled:
+    case OrderState.CANCELLED:
       dropShadowStyle = "shadow-red-700";
       orderStateString = "Cancelled";
       break;

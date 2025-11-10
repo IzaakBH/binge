@@ -1,7 +1,7 @@
 import {type BeanSpecifics} from "~/server/api/routers/beans";
-import {LuChefHat, LuLightbulb, LuThermometer, LuWine} from "react-icons/lu";
+import {LuChefHat, LuLightbulb, LuThermometer, LuWine, LuUtensilsCrossed} from "react-icons/lu";
 
-const SpecificsCard = (props: { specifics: BeanSpecifics }) => {
+const SpecificsCard = (props: { specifics: BeanSpecifics, stock: number }) => {
 
   return (
       <div className="bg-binge-off-white relative box-border border-2 border-binge-off-black w-full rounded-lg mt-4">
@@ -23,6 +23,11 @@ const SpecificsCard = (props: { specifics: BeanSpecifics }) => {
           <div className="col-span-4 flex p-2 border-t-2">
             <LuLightbulb size="1.5em"/>
             <p className="pl-2">{props.specifics.additionalInfo}</p>
+          </div>
+
+          <div className="col-span-4 flex p-2 border-t-2">
+            <LuUtensilsCrossed size="1.5em"/>
+            <p className="pl-2">{props.stock} in stock</p>
           </div>
         </div>
       </div>

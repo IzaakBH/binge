@@ -1,7 +1,7 @@
 'use client'
 
 import {PictureCard} from "~/app/_components/swipe/PictureCard";
-import {type BeanDetails} from "~/server/api/routers/beans";
+import {type BeanDetails} from "~/types/Types";
 import MatchModal from "~/app/_components/swipe/MatchModal";
 import {useState} from "react";
 import {api} from "~/trpc/react";
@@ -40,7 +40,7 @@ const Offering = (props: { beanDetails: BeanDetails, userName: string, onSwipe: 
 
         <PictureCard beanDetails={props.beanDetails} onMatch={() => setIsMatch(true)}/>
 
-        <SpecificsCard specifics={props.beanDetails.specifics}/>
+        <SpecificsCard specifics={props.beanDetails.specifics} stock={props.beanDetails.stock} />
 
         <IngredientsCard beanIngredients={props.beanDetails.ingredients}/>
 

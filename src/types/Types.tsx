@@ -1,9 +1,5 @@
-export enum OrderState {
-  Pending,
-  Accepted,
-  Completed,
-  Cancelled
-}
+import { type OrderState } from "@prisma/client";
+import { BeanIngredients, BeanSpecifics } from "~/server/api/routers/beans";
 
 export interface BeanOrder {
   orderId: string,
@@ -11,4 +7,14 @@ export interface BeanOrder {
   name: string;
   orderState: OrderState,
   orderPlacedDateTime: Date
+}
+
+export interface BeanDetails {
+  id: string,
+  name: string,
+  description: string,
+  image1Url: string,
+  ingredients: BeanIngredients,
+  specifics: BeanSpecifics,
+  stock: number,
 }

@@ -24,3 +24,8 @@ enum OrderState {
   COMPLETED
   CANCELLED
 }
+
+model BeanStock {
+  id    String @id
+  stock Int
+}
