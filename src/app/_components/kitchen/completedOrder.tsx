@@ -1,4 +1,4 @@
-import {type BeanOrder, OrderState} from "~/server/api/routers/beans";
+import {type BeanOrder, OrderState} from "~/types/Types";
 import React from "react";
 import {minsSinceDate} from "~/app/util/DateUtil";
 

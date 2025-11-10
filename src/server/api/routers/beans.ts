@@ -1,20 +1,6 @@
-import {initTRPC} from '@trpc/server';
 import {z} from "zod";
-
-export enum OrderState {
-  Pending,
-  Accepted,
-  Completed,
-  Cancelled
-}
-
-export interface BeanOrder {
-  orderId: string,
-  beanName: string;
-  name: string;
-  orderState: OrderState,
-  orderPlacedDateTime: Date
-}
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { type BeanOrder, OrderState } from "~/types/Types"
 
 export interface BeanIngredients {
   line1: string,
@@ -30,6 +16,7 @@ export interface BeanSpecifics {
 }
 
 export interface BeanDetails {
+  id: string,
   name: string,
   description: string,
   image1Url: string,
@@ -56,6 +43,7 @@ const beanOrders: BeanOrder[] = [
 
 const beanDetails: BeanDetails[] = [
   {
+    id: "3d1e1622-e9f5-488e-bb53-938c93d1c465",
     name: "Borlotti Beans",
     description: "In a tomato sauce",
     image1Url: "/img/borlotti_beans_1.jpg",
@@ -63,103 +51,112 @@ const beanDetails: BeanDetails[] = [
     specifics: {temperature: "Hot", chefName: "Mr Tom Hibbs", pairingSuggestion: "Homemade Cider", additionalInfo: "Do not consume if you have a pacemaker"}
   },
   {
-    name: "Homemade Cider",
-    description: "Tangy",
-    image1Url: "/img/homemade_cider_1.jpg",
-    ingredients: {line1: "Apples", line2: "Honey", line3: "Germs"},
-    specifics: {temperature: "Cold", chefName: "Jamie Oliver", pairingSuggestion: "Definitely not Borlotti Beans", additionalInfo: "Tailor Swift was an industry plant"}
-  },
-  {
+    id: "3d1e1622-e9f5-488e-bb53-938c93d1c466",
     name: "Mead",
     description: "Not fit for human consumption",
     image1Url: "/img/mead_1.jpg",
     ingredients: {line1: "Honey", line2: "Petrol", line3: "Lighter Fluid"},
-    specifics: {temperature: "Unknown", chefName: "The monk we keep in the walls", pairingSuggestion: "Fomepizole 5mg", additionalInfo: "Do not consume"}
+    specifics: {temperature: "Room Temp", chefName: "The monk we keep in the walls", pairingSuggestion: "Fomepizole 5mg", additionalInfo: "Do not consume"}
   }
 ]
 
+// Replace above orders list with db
 
-const t = initTRPC.create({isServer: true});
 
-export const beanRouter = t.router({
-  orderBeans: t.procedure
-  .input(
+export const beanRouter = createTRPCRouter({
+  orderBeans: publicProcedure
+    .input(
       z.object({
         beanName: z.string(),
-        user: z.string()
-      })
-  )
-  .mutation(async (opts) => {
-    const {input} = opts;
+        user: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
 
-    beanOrders.push({
-      orderId: crypto.randomUUID(),
-      beanName: input.beanName,
-      name: input.user,
-      orderState: OrderState.Pending,
-      orderPlacedDateTime: new Date(),
-    })
-    console.log("Ordering beans " + input.beanName + " for user " + input.user);
-  }),
+      // const order =
+      await ctx.db.order.create({
+        data: {
+          beanId: beanDetails
+            .filter((detail) => detail.name === input.beanName)
+            .map((detail) => detail.id)[0] ?? 'Unknown Bean Id',
+          name: input.user,
+        },
+      });
+      return;
+      // beanOrders.push({
+      //   orderId: crypto.randomUUID(),
+      //   beanName: input.beanName,
+      //   name: input.user,
+      //   orderState: OrderState.Pending,
+      //   orderPlacedDateTime: new Date(),
+      // })
+      // console.log("Ordering beans " + input.beanName + " for user " + input.user);
+    }),
 
-  acceptOrder: t.procedure
-  .input(
+  acceptOrder: publicProcedure
+    .input(
       z.object({
-        orderId: z.string()
-      })
-  ).mutation(async (opts) => {
-    const {input} = opts;
+        orderId: z.string(),
+      }),
+    )
+    .mutation(async (opts) => {
+      const { input } = opts;
 
-    const order = beanOrders.find(order => order.orderId === input.orderId);
-    if (order) {
-      order.orderState = OrderState.Accepted;
-    }
-  }),
+      const order = beanOrders.find((order) => order.orderId === input.orderId);
+      if (order) {
+        order.orderState = OrderState.Accepted;
+      }
+    }),
 
-  completeOrder: t.procedure
-  .input(
+  completeOrder: publicProcedure
+    .input(
       z.object({
-        orderId: z.string()
-      })
-  ).mutation(async (opts) => {
-    const {input} = opts;
+        orderId: z.string(),
+      }),
+    )
+    .mutation(async (opts) => {
+      const { input } = opts;
 
-    const order = beanOrders.find(order => order.orderId === input.orderId);
-    if (order) {
-      order.orderState = OrderState.Completed;
-    }
-  }),
+      const order = beanOrders.find((order) => order.orderId === input.orderId);
+      if (order) {
+        order.orderState = OrderState.Completed;
+      }
+    }),
 
-  rejectOrder: t.procedure
-  .input(
+  rejectOrder: publicProcedure
+    .input(
       z.object({
-        orderId: z.string()
-      })
-  ).mutation(async (opts) => {
-    const {input} = opts;
+        orderId: z.string(),
+      }),
+    )
+    .mutation(async (opts) => {
+      const { input } = opts;
 
-    const order = beanOrders.find(order => order.orderId === input.orderId);
-    if (order) {
-      order.orderState = OrderState.Cancelled;
-    }
+      const order = beanOrders.find((order) => order.orderId === input.orderId);
+      if (order) {
+        order.orderState = OrderState.Cancelled;
+      }
+    }),
+
+  getBeanOrders: publicProcedure.query(async ({ctx}) => {
+    return await ctx.db.order.findMany() ?? [];
+    // return beanOrders;
   }),
 
-  getBeanOrders: t.procedure.query(() => {
-    return beanOrders;
-  }),
+  getBeanOrdersByName: publicProcedure
+    .input(
+      z.object({
+        name: z.string(),
+      }),
+    )
+    .query(async (opts) => {
+      const { input } = opts;
 
-  getBeanOrdersByName: t.procedure
-  .input(z.object({
-    name: z.string(),
-  }))
-  .query(async (opts) => {
-    const {input} = opts;
+      return beanOrders.filter((order) => order.name === input.name);
+    }),
 
-    return beanOrders.filter(order => order.name === input.name);
-  }),
-
-  getBeanDetails: t.procedure.query(() => {
+  getBeanDetails: publicProcedure.query(() => {
     return beanDetails;
-  })
+  }),
 });
 

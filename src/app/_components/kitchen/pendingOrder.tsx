@@ -1,6 +1,6 @@
 'use client'
 
-import {type BeanOrder} from "~/server/api/routers/beans";
+import {type BeanOrder} from "~/types/Types";
 import React from "react";
 import {api} from "~/trpc/react";
 import {minsSinceDate} from "~/app/util/DateUtil";
