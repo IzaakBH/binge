@@ -1,5 +1,5 @@
 import { type OrderState } from "@prisma/client";
-import { BeanIngredients, BeanSpecifics } from "~/server/api/routers/beans";
+import { type BeanIngredients, BeanSpecifics } from "~/server/api/routers/beans";
 
 export interface BeanOrder {
   orderId: string,

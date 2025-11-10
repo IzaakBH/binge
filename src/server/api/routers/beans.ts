@@ -57,7 +57,7 @@ export const beanRouter = createTRPCRouter({
         where: {
           id: beanId
         }
-      }) ?? 0;
+      }) ?? {stock: 0};
 
       if (stock.stock <= 0) {
         return;
