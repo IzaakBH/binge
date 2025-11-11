@@ -1,0 +1,29 @@
+services:
+  binge:
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    ports:
+      - "3092:3000"
+    image: t3-app
+    networks:
+      - binge
+    environment:
+      - DATABASE_URL=postgresql://binge:r_8r5YR8FRId-1AT@binge-db:5432/binge
+
+
+  binge-db:
+    # Official Postgres image from DockerHub (we use the last version)
+    image: 'postgres:latest'
+
+    networks: binge
+
+    environment:
+      POSTGRES_USER: binge # The PostgreSQL user (useful to connect to the database)
+      POSTGRES_PASSWORD: r_8r5YR8FRId-1AT # The PostgreSQL password (useful to connect to the database)
+      POSTGRES_DB: binge
+
+networks:
+  binge:

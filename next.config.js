@@ -10,6 +10,7 @@ const config = {
     appIsrStatus: false,
     buildActivity: false,
   },
+  output: "standalone",
 };
 
 
