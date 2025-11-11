@@ -19,26 +19,50 @@ export interface BeanSpecifics {
 const beanDetails: BeanDetails[] = [
   {
     id: "3d1e1622-e9f5-488e-bb53-938c93d1c465",
-    name: "Borlotti Beans",
-    description: "In a tomato sauce",
-    image1Url: "/img/borlotti_beans_1.jpg",
-    ingredients: {line1: "Glue", line2: "Glue", line3: "Glue"},
-    specifics: {temperature: "Hot", chefName: "Mr Tom Hibbs", pairingSuggestion: "Homemade Cider", additionalInfo: "Do not consume if you have a pacemaker"},
+    name: "Dal with Rice (Ve)",
+    description: "Mung dal is used to make a creamy and delicious dal that is a daily staple of the Indian sub-continent.",
+    image1Url: "/img/mung_dal.jpg",
+    ingredients: {line1: "Mung Dal", line2: "Tomato", line3: "Rice"},
+    specifics: {temperature: "Hot", chefName: "Yeshi Jampa", pairingSuggestion: "Homemade Cider", additionalInfo: "Do not consume if you have a pacemaker"},
     stock: 0,
   },
   {
     id: "3d1e1622-e9f5-488e-bb53-938c93d1c466",
+    name: "Roasted Veggies (Ve)",
+    description: "Roasted organic vegetables",
+    image1Url: "/img/roasted_veg.jpg",
+    ingredients: {line1: "Squash", line2: "Potatoes", line3: "Soil"},
+    specifics: {temperature: "Hot", chefName: "Mr Tato", pairingSuggestion: "Mung Dal", additionalInfo: "Did you know vegetables are often vegetarian?"},
+    stock: 0,
+  },
+  {
+    id: "3d1e1622-e9f5-488e-bb53-938c93d1c467",
+    name: "Homemade Focaccia (Ve)",
+    description: "Sheriff Production's take on an Italian Classic",
+    image1Url: "/img/focaccia.jpg",
+    ingredients: {line1: "Flour", line2: "Oil", line3: "Water"},
+    specifics: {temperature: "Room Temp", chefName: "Italian Izaak", pairingSuggestion: "Hummus", additionalInfo: "May contain flour"},
+    stock: 0,
+  },
+  {
+    id: "3d1e1622-e9f5-488e-bb53-938c93d1c468",
+    name: "Hummus",
+    description: "A chickpeas based dip",
+    image1Url: "/img/hummus.jpg",
+    ingredients: {line1: "Chickpeas", line2: "Tahini", line3: "Oil"},
+    specifics: {temperature: "Cold", chefName: "Also Izaak", pairingSuggestion: "Focaccia", additionalInfo: "Have you ever just sat and watched the washing machine go round? Do it, its fun"},
+    stock: 0,
+  },
+  {
+    id: "3d1e1622-e9f5-488e-bb53-938c93d1c469",
     name: "Mead",
-    description: "Not fit for human consumption",
+    description: "Probably not fit for human consumption",
     image1Url: "/img/mead_1.jpg",
     ingredients: {line1: "Honey", line2: "Petrol", line3: "Lighter Fluid"},
     specifics: {temperature: "Room Temp", chefName: "The monk we keep in the walls", pairingSuggestion: "Fomepizole 5mg", additionalInfo: "Do not consume"},
     stock: 0,
   }
 ]
-
-// Replace above orders list with db
-
 
 export const beanRouter = createTRPCRouter({
   orderBeans: publicProcedure
@@ -189,19 +213,20 @@ export const beanRouter = createTRPCRouter({
     return enrichedDetails;
   }),
 
-  insertStock: publicProcedure.mutation(async ({ ctx }) => {
+  insertStock: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        stock: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
 
-    const dataToUpsert = [
-      { id: '3d1e1622-e9f5-488e-bb53-938c93d1c465', stock: 10 },
-      { id: '3d1e1622-e9f5-488e-bb53-938c93d1c466', stock: 10 },
-    ];
-    for (const data of dataToUpsert) {
-      await ctx.db.beanStock.upsert({
-        where: { id: data.id },
-        update: { stock: data.stock },
-        create: data,
-      })
-    }
+    await ctx.db.beanStock.upsert({
+      where: { id: input.id },
+      update: { stock: input.stock },
+      create: input,
+    })
 
   }),
 });
