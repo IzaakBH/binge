@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {api} from "~/trpc/react";
 
 export function Stock() {
-  const {data: beanDetails = []} = api.bean.getBeanDetails.useQuery();
+  const {data: beanDetails = []} = api.bean.getAllBeanDetails.useQuery();
   const insertStock = api.bean.insertStock.useMutation({});
 
   const [stockValues, setStockValues] = useState<Record<string, string>>({});
@@ -32,6 +32,7 @@ export function Stock() {
       {beanDetails.map((bean) => (
         <div key={bean.id} className="flex items-center gap-3">
           <span>{bean.name}</span>
+          <span>{bean.stock}</span>
           <input
             type="number"
             onChange={(e) => handleStockChange(bean.id, e.target.value)}

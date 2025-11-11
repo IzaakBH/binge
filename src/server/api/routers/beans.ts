@@ -192,6 +192,25 @@ export const beanRouter = createTRPCRouter({
       }));
     }),
 
+  getAllBeanDetails: publicProcedure.query(async ({ctx}) => {
+    const beanIds = beanDetails.map(detail => detail.id);
+
+    const beanStock: BeanStock[] = await ctx.db.beanStock.findMany({
+      where: {
+        id: {
+          in: beanIds
+        }
+      }
+    })
+
+    const beanStockMap = new Map(beanStock.map(stock => [stock.id, stock.stock]));
+
+    return beanDetails.map(details => ({
+      ...details,
+      stock: beanStockMap.get(details.id) ?? 0,
+    }))
+  }),
+
   getBeanDetails: publicProcedure.query(async ({ctx}) => {
     const beanIds = beanDetails.map(detail => detail.id);
 
@@ -205,12 +224,10 @@ export const beanRouter = createTRPCRouter({
 
     const beanStockMap = new Map(beanStock.map(stock => [stock.id, stock.stock]));
 
-    const enrichedDetails = beanDetails.map(details => ({
+    return beanDetails.map(details => ({
       ...details,
-      stock: beanStockMap.get(details.id) ?? 100,
-    }));
-
-    return enrichedDetails;
+      stock: beanStockMap.get(details.id) ?? 0,
+    })).filter(details => details.stock > 0);
   }),
 
   insertStock: publicProcedure
